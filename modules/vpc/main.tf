@@ -47,7 +47,7 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_security_group" "ec2" {
   name        = "${var.name_prefix}-ec2-sg"
-  description = "Allow SSH access to EC2"
+  description = "Allow SSH and HTTP access to EC2"
   vpc_id      = aws_vpc.this.id
 
   ingress {
@@ -56,6 +56,14 @@ resource "aws_security_group" "ec2" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = [var.allowed_ssh_cidr]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
