@@ -311,10 +311,10 @@ If you are learning Terraform, try this order:
 ## 13) Current Configuration Snapshot
 
 - AWS region: `us-east-1`
-- AMI: `ami-098e39bafa7e7303d`
+- AMI: `ami-`
 - Instance type: `t3.small`
 - Environments configured: `dev`, `prod`
-- Remote backend: S3 bucket `my-terraform-state-0001232324`
+- Remote backend: S3 bucket `my-terraform-state-`
 
 ---
 
