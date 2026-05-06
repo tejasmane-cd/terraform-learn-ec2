@@ -318,9 +318,3 @@ If you are learning Terraform, try this order:
 
 ---
 
-If you want, the next step can be adding:
-
-- separate backend config files for `dev` and `prod`
-- a `Makefile` for one-command workflows
-- more outputs (instance ID, VPC ID, subnet ID)
-- a hardened security baseline
