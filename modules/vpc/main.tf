@@ -17,13 +17,15 @@ resource "aws_internet_gateway" "this" {
 }
 
 resource "aws_subnet" "public" {
+  count = length(var.public_subnet_cidrs)
+
   vpc_id                  = aws_vpc.this.id
-  cidr_block              = var.public_subnet_cidr
-  availability_zone       = var.availability_zone
+  cidr_block              = var.public_subnet_cidrs[count.index]
+  availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.name_prefix}-public-subnet"
+    Name = "${var.name_prefix}-public-subnet-${count.index + 1}"
   }
 }
 
@@ -41,13 +43,41 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
+  count = length(aws_subnet.public)
+
+  subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
+}
+
+resource "aws_security_group" "alb" {
+  name        = "${var.name_prefix}-alb-sg"
+  description = "Allow HTTP access to the load balancer"
+  vpc_id      = aws_vpc.this.id
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "All outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.name_prefix}-alb-sg"
+  }
 }
 
 resource "aws_security_group" "ec2" {
   name        = "${var.name_prefix}-ec2-sg"
-  description = "Allow SSH and HTTP access to EC2"
+  description = "Allow SSH access and HTTP traffic from the load balancer"
   vpc_id      = aws_vpc.this.id
 
   ingress {
@@ -59,11 +89,11 @@ resource "aws_security_group" "ec2" {
   }
 
   ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTP from ALB"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
 
   egress {

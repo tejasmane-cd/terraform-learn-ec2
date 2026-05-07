@@ -1,13 +1,17 @@
-# Terraform Learn Project (AWS VPC + EC2)
+# Terraform Learn Project (AWS VPC + ALB + ASG)
 
 This repository is a beginner-friendly Terraform project that creates a simple AWS infrastructure using modules:
 
 - A **VPC** with:
   - internet gateway
-  - public subnet
+  - public subnets created with `count`
   - route table + association
-  - security group (SSH access)
-- An **EC2 instance** inside that public subnet
+  - security groups for the load balancer and EC2 instances
+- An **Application Load Balancer** listening on HTTP port `80`
+- An **Auto Scaling Group** that launches EC2 instances with:
+  - desired capacity: `2`
+  - minimum size: `2`
+  - maximum size: `3`
 
 The code is organized so you can understand Terraform fundamentals and also learn a clean module-based structure.
 
@@ -19,13 +23,14 @@ When you run this project, Terraform creates:
 
 1. `aws_vpc`  
 2. `aws_internet_gateway` attached to that VPC  
-3. `aws_subnet` (public subnet)  
+3. `aws_subnet` public subnets using `count`  
 4. `aws_route_table` with default route `0.0.0.0/0 -> Internet Gateway`  
-5. `aws_route_table_association` to connect subnet with route table  
-6. `aws_security_group` allowing SSH (`22`) from configured CIDR  
-7. `aws_instance` launched in the subnet and attached to the security group  
+5. `aws_route_table_association` to connect subnets with route table  
+6. `aws_security_group` resources for ALB and EC2 traffic  
+7. `aws_lb`, `aws_lb_target_group`, and `aws_lb_listener`  
+8. `aws_launch_template` and `aws_autoscaling_group`  
 
-At the end, Terraform outputs the EC2 public IP.
+At the end, Terraform outputs the ALB DNS name and ASG name.
 
 ---
 
@@ -40,6 +45,10 @@ terraform-learn/
 ├── prod.tfvars
 └── modules/
     ├── vpc/
+    │   ├── main.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── alb/
     │   ├── main.tf
     │   ├── variables.tf
     │   └── outputs.tf
@@ -58,16 +67,18 @@ terraform-learn/
 - `variables.tf`
   - Input variables for region, naming, networking, and EC2 settings
 - `outputs.tf`
-  - Exposes EC2 public IP from module output
+  - Exposes ALB DNS name and ASG name from module outputs
 - `dev.tfvars` and `prod.tfvars`
   - Environment-specific values (`environment`, CIDRs, etc.)
 
 ### Module files
 
 - `modules/vpc/*`
-  - Handles networking and security group
+  - Handles networking, public subnets, and security groups
+- `modules/alb/*`
+  - Handles Application Load Balancer, listener, and target group
 - `modules/ec2/*`
-  - Handles instance creation
+  - Handles launch template and Auto Scaling Group
 
 ---
 
@@ -175,7 +186,7 @@ Type `yes` when prompted.
 terraform output
 ```
 
-You should see `public_ip`.
+You should see `alb_dns_name` and `asg_name`.
 
 ---
 
@@ -204,11 +215,13 @@ If you truly want separate remote states for dev/prod, you should use different 
 2. Root module computes `local.name_prefix`.
 3. Root calls `module.vpc` with networking + SSH CIDR values.
 4. VPC module creates network resources and outputs:
-   - `public_subnet_id`
+   - `public_subnet_ids`
+   - `alb_security_group_id`
    - `ec2_security_group_id`
-5. Root passes these outputs into `module.ec2`.
-6. EC2 module launches instance.
-7. Root output returns EC2 `public_ip`.
+5. Root passes subnet and ALB security group outputs into `module.alb`.
+6. Root passes subnet, EC2 security group, and target group outputs into `module.ec2`.
+7. EC2 module creates a launch template and ASG with desired/min `2` and max `3`.
+8. Root output returns `alb_dns_name` and `asg_name`.
 
 ---
 
@@ -317,4 +330,3 @@ If you are learning Terraform, try this order:
 - Remote backend: S3 bucket `my-terraform-state-`
 
 ---
-

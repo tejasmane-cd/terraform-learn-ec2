@@ -26,11 +26,20 @@ locals {
 module "vpc" {
   source = "./modules/vpc"
 
+  name_prefix         = local.name_prefix
+  vpc_cidr            = var.vpc_cidr
+  public_subnet_cidrs = var.public_subnet_cidrs
+  availability_zones  = var.availability_zones
+  allowed_ssh_cidr    = var.allowed_ssh_cidr
+}
+
+module "alb" {
+  source = "./modules/alb"
+
   name_prefix        = local.name_prefix
-  vpc_cidr           = var.vpc_cidr
-  public_subnet_cidr = var.public_subnet_cidr
-  availability_zone  = var.availability_zone
-  allowed_ssh_cidr   = var.allowed_ssh_cidr
+  vpc_id             = module.vpc.vpc_id
+  subnet_ids         = module.vpc.public_subnet_ids
+  security_group_ids = [module.vpc.alb_security_group_id]
 }
 
 module "ec2" {
@@ -40,6 +49,10 @@ module "ec2" {
   instance_type          = var.instance_type
   key_name               = var.key_name
   name                   = "${local.name_prefix}-server"
-  subnet_id              = module.vpc.public_subnet_id
+  subnet_ids             = module.vpc.public_subnet_ids
   vpc_security_group_ids = [module.vpc.ec2_security_group_id]
+  target_group_arns      = [module.alb.target_group_arn]
+  desired_capacity       = 2
+  min_size               = 2
+  max_size               = 3
 }
