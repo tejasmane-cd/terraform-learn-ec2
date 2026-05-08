@@ -13,7 +13,7 @@ This repository is a beginner-friendly Terraform project that creates a simple A
   - minimum size: `2`
   - maximum size: `3`
 
-
+The code is organized so you can understand Terraform fundamentals and also learn a clean module-based structure.
 
 ---
 
