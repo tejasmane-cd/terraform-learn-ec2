@@ -11,7 +11,11 @@ resource "aws_launch_template" "this" {
               dnf install -y nginx
               systemctl enable nginx
               systemctl start nginx
-              cat > /usr/share/nginx/html/index.html <<'HTML'
+              TOKEN=$(curl -fsS -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" || true)
+              PUBLIC_IP=$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" "http://169.254.169.254/latest/meta-data/public-ipv4" || true)
+              PUBLIC_IP=$${PUBLIC_IP:-unavailable}
+
+              cat > /usr/share/nginx/html/index.html <<HTML
               <!doctype html>
               <html lang="en">
               <head>
@@ -28,6 +32,7 @@ resource "aws_launch_template" "this" {
               <body>
                 <div class="card">
                   <h1>Nginx is running on ${var.name}</h1>
+                  <p>Instance public IP: $PUBLIC_IP</p>
                   <p>This page was provisioned automatically with Terraform user_data.</p>
                 </div>
               </body>
