@@ -251,6 +251,7 @@ What it does:
 - Runs automatically on pull requests for validation and planning
 - Runs `terraform apply -auto-approve tfplan` only from manual `workflow_dispatch`
 - Requires `action` to be `apply` and `confirm_apply` to be exactly `apply`
+- Supports manual destroy with `action` set to `destroy` and `confirm_destroy` set to exactly `destroy`
 - Keeps credentials out of the repository
 
 ### GitHub secrets

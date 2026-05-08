@@ -22,15 +22,20 @@ on:
           - dev
           - prod
       action:
-        description: "Plan only, or apply after planning"
+        description: "Choose plan, apply, or destroy"
         type: choice
         required: true
         default: plan
         options:
           - plan
           - apply
+          - destroy
       confirm_apply:
         description: "Type apply to allow terraform apply"
+        required: false
+        default: ""
+      confirm_destroy:
+        description: "Type destroy to allow terraform destroy"
         required: false
         default: ""
 
@@ -91,8 +96,17 @@ jobs:
         run: terraform validate -no-color
 
       - name: "📋 Terraform plan"
+        if: ${{ inputs.action != 'destroy' }}
         run: terraform plan -no-color -input=false -var-file="${TF_VAR_FILE}" -out=tfplan
 
       - name: "🚀 Terraform apply"
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.confirm_apply == 'apply' }}
         run: terraform apply -auto-approve tfplan
+
+      - name: "🧨 Terraform destroy plan"
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.confirm_destroy == 'destroy' }}
+        run: terraform plan -destroy -no-color -input=false -var-file="${TF_VAR_FILE}" -out=tfplan-destroy
+
+      - name: "🗑️ Terraform destroy"
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'destroy' && inputs.confirm_destroy == 'destroy' }}
+        run: terraform apply -auto-approve tfplan-destroy
