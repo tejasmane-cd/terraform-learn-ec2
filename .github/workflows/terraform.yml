@@ -1,4 +1,4 @@
-name: Terraform
+name: "🚀 Terraform Infrastructure"
 
 on:
   pull_request:
@@ -11,9 +11,6 @@ on:
       - "**/*.tfvars"
       - ".terraform.lock.hcl"
       - ".github/workflows/terraform.yml"
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -53,29 +50,29 @@ env:
 
 jobs:
   terraform:
-    name: Terraform ${{ inputs.action || 'apply' }} (${{ inputs.environment || 'prod' }})
+    name: "🏗️ Terraform ${{ inputs.action || 'plan' }} (${{ inputs.environment || 'prod' }})"
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'prod' }}
     env:
       AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
     steps:
-      - name: Checkout
+      - name: "📥 Checkout repository"
         uses: actions/checkout@v4
 
-      - name: Setup Terraform
+      - name: "🧰 Setup Terraform"
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.8
 
-      - name: Configure AWS credentials with OIDC
+      - name: "🔐 Configure AWS credentials with OIDC"
         if: ${{ env.AWS_ROLE_TO_ASSUME != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
 
-      - name: Configure AWS credentials with access keys
+      - name: "🔑 Configure AWS credentials with access keys"
         if: ${{ env.AWS_ROLE_TO_ASSUME == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -84,18 +81,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
 
-      - name: Terraform fmt
+      - name: "🧹 Terraform format check"
         run: terraform fmt -check -recursive
 
-      - name: Terraform init
+      - name: "⚙️ Terraform init"
         run: terraform init -input=false
 
-      - name: Terraform validate
+      - name: "✅ Terraform validate"
         run: terraform validate -no-color
 
-      - name: Terraform plan
+      - name: "📋 Terraform plan"
         run: terraform plan -no-color -input=false -var-file="${TF_VAR_FILE}" -out=tfplan
 
-      - name: Terraform apply
-        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.confirm_apply == 'apply') }}
+      - name: "🚀 Terraform apply"
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.confirm_apply == 'apply' }}
         run: terraform apply -auto-approve tfplan

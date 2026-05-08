@@ -248,9 +248,9 @@ This repo includes a safe Terraform workflow at `.github/workflows/terraform.yml
 What it does:
 
 - Runs `terraform fmt`, `terraform init`, `terraform validate`, and `terraform plan`
-- Runs automatically on pull requests and pushes to `main`
-- Runs `terraform apply -auto-approve tfplan` automatically after a push to `main`
-- Also supports manual apply from `workflow_dispatch` when `action` is `apply` and `confirm_apply` is exactly `apply`
+- Runs automatically on pull requests for validation and planning
+- Runs `terraform apply -auto-approve tfplan` only from manual `workflow_dispatch`
+- Requires `action` to be `apply` and `confirm_apply` to be exactly `apply`
 - Keeps credentials out of the repository
 
 ### GitHub secrets
