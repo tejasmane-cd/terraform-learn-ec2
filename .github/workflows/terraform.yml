@@ -1,0 +1,108 @@
+name: Terraform
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "*.tf"
+      - "**/*.tf"
+      - "*.tfvars"
+      - "**/*.tfvars"
+      - ".terraform.lock.hcl"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "*.tf"
+      - "**/*.tf"
+      - "*.tfvars"
+      - "**/*.tfvars"
+      - ".terraform.lock.hcl"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Terraform variable file to use"
+        type: choice
+        required: true
+        default: dev
+        options:
+          - dev
+          - prod
+      action:
+        description: "Plan only, or apply after planning"
+        type: choice
+        required: true
+        default: plan
+        options:
+          - plan
+          - apply
+      confirm_apply:
+        description: "Type apply to allow terraform apply"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-${{ github.ref }}-${{ inputs.environment || 'dev' }}
+  cancel-in-progress: false
+
+env:
+  TF_INPUT: "false"
+  TF_IN_AUTOMATION: "true"
+  TF_VAR_FILE: ${{ inputs.environment || 'dev' }}.tfvars
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+jobs:
+  terraform:
+    name: Terraform ${{ inputs.action || 'plan' }} (${{ inputs.environment || 'dev' }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    env:
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Configure AWS credentials with OIDC
+        if: ${{ env.AWS_ROLE_TO_ASSUME != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+
+      - name: Configure AWS credentials with access keys
+        if: ${{ env.AWS_ROLE_TO_ASSUME == '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan
+        run: terraform plan -no-color -input=false -var-file="${TF_VAR_FILE}" -out=tfplan
+
+      - name: Terraform apply
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.confirm_apply == 'apply' }}
+        run: terraform apply -no-color -input=false -auto-approve tfplan

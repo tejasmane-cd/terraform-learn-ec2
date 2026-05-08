@@ -241,7 +241,60 @@ terraform destroy -var-file=prod.tfvars
 
 ---
 
-## 9) Common Beginner Issues and Fixes
+## 9) Deploy with GitHub Actions
+
+This repo includes a safe Terraform workflow at `.github/workflows/terraform.yml`.
+
+What it does:
+
+- Runs `terraform fmt`, `terraform init`, `terraform validate`, and `terraform plan`
+- Runs automatically on pull requests and pushes to `main`
+- Runs `terraform apply` only from manual `workflow_dispatch`
+- Requires typing `apply` in the `confirm_apply` input before apply can run
+- Keeps credentials out of the repository
+
+### GitHub secrets
+
+Recommended option: use AWS OIDC and add this GitHub secret:
+
+```text
+AWS_ROLE_TO_ASSUME=arn:aws:iam::<account-id>:role/<github-actions-terraform-role>
+```
+
+Fallback option: use access keys stored as GitHub secrets:
+
+```text
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_SESSION_TOKEN=... # optional
+```
+
+You can also set this GitHub repository variable:
+
+```text
+AWS_REGION=us-east-1
+```
+
+### Local `.env`
+
+For local use, copy `.env.example` to `.env` and update values as needed.
+The real `.env` file is ignored by Git, so do not put credentials in committed files.
+
+```bash
+cp .env.example .env
+```
+
+Important note: this project currently has a fixed backend key in `main.tf`:
+
+```text
+dev/terraform.tfstate
+```
+
+That means `dev.tfvars` and `prod.tfvars` are not fully isolated remote states yet. Before using both environments seriously, split the backend state key per environment.
+
+---
+
+## 10) Common Beginner Issues and Fixes
 
 ### 1) `No valid credential sources found`
 

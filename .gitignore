@@ -10,3 +10,8 @@ override.tf.json
 *_override.tf.json
 .terraformrc
 terraform.rc
+
+# Local environment files. Keep real credentials out of Git.
+.env
+.env.*
+!.env.example
