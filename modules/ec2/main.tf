@@ -33,7 +33,7 @@ resource "aws_launch_template" "this" {
                 <div class="card">
                   <h1>Nginx is running on ${var.name}</h1>
                   <p>Instance public IP: $PUBLIC_IP</p>
-                  <p>This page was provisioned automatically with Terraform user_data.</p>
+                  <p>This page was provisioned automatically Terraform user_data.</p>
                 </div>
               </body>
               </html>
