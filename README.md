@@ -249,8 +249,8 @@ What it does:
 
 - Runs `terraform fmt`, `terraform init`, `terraform validate`, and `terraform plan`
 - Runs automatically on pull requests and pushes to `main`
-- Runs `terraform apply` only from manual `workflow_dispatch`
-- Requires typing `apply` in the `confirm_apply` input before apply can run
+- Runs `terraform apply -auto-approve tfplan` automatically after a push to `main`
+- Also supports manual apply from `workflow_dispatch` when `action` is `apply` and `confirm_apply` is exactly `apply`
 - Keeps credentials out of the repository
 
 ### GitHub secrets

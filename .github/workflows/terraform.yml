@@ -14,13 +14,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "*.tf"
-      - "**/*.tf"
-      - "*.tfvars"
-      - "**/*.tfvars"
-      - ".terraform.lock.hcl"
-      - ".github/workflows/terraform.yml"
   workflow_dispatch:
     inputs:
       environment:
@@ -49,20 +42,20 @@ permissions:
   id-token: write
 
 concurrency:
-  group: terraform-${{ github.ref }}-${{ inputs.environment || 'dev' }}
+  group: terraform-${{ github.ref }}-${{ inputs.environment || 'prod' }}
   cancel-in-progress: false
 
 env:
   TF_INPUT: "false"
   TF_IN_AUTOMATION: "true"
-  TF_VAR_FILE: ${{ inputs.environment || 'dev' }}.tfvars
+  TF_VAR_FILE: ${{ inputs.environment || 'prod' }}.tfvars
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
 
 jobs:
   terraform:
-    name: Terraform ${{ inputs.action || 'plan' }} (${{ inputs.environment || 'dev' }})
+    name: Terraform ${{ inputs.action || 'apply' }} (${{ inputs.environment || 'prod' }})
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'dev' }}
+    environment: ${{ inputs.environment || 'prod' }}
     env:
       AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
 
@@ -104,5 +97,5 @@ jobs:
         run: terraform plan -no-color -input=false -var-file="${TF_VAR_FILE}" -out=tfplan
 
       - name: Terraform apply
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.confirm_apply == 'apply' }}
-        run: terraform apply -no-color -input=false -auto-approve tfplan
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply' && inputs.confirm_apply == 'apply') }}
+        run: terraform apply -auto-approve tfplan
